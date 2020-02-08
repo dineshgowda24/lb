@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/dineshgowda24/loadbalancer/backendserver/config"
+	"github.com/dineshgowda24/lb/backendserver/config"
 )
 
 func main() {
@@ -24,18 +25,18 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to decode conf.json file")
 	}
-
+	http.HandleFunc("/", handle)
 	for _, s := range config.Servers {
-		mux := http.NewServeMux()
-		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			response := "I came from " + s.Host + s.Port
-			w.Write([]byte(response))
-			w.WriteHeader(http.StatusOK)
-		})
-		if err := http.ListenAndServe(s.Host+":"+s.Port, mux); err != nil {
-			log.Printf("Unable to start server at : %s : %s ", s.Host, s.Port)
-		} else {
-			log.Printf("Started server at : %s : %s ", s.Host, s.Port)
-		}
+		log.Printf("Started server at : %s : %s ", s.Host, s.Port)
+		go func(host, port string) {
+			if err := http.ListenAndServe(host+":"+port, nil); err != nil {
+				log.Printf("Unable to start server at : %s : %s ", host, port)
+			}
+		}(s.Host, s.Port)
 	}
+	select {}
+}
+
+func handle(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "I came from "+r.URL.Hostname()+r.URL.Port())
 }

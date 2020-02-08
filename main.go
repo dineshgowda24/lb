@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"flag"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -14,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dineshgowda24/loadbalancer/backendserver/config"
+	"github.com/dineshgowda24/lb/backendserver/config"
 )
 
 type AppServer struct {
@@ -67,12 +66,14 @@ func (c *AppCluster) GetNextServer() *AppServer {
 
 func isAppServerAlive(u *url.URL) bool {
 	tout := 2 * time.Second
-	conn, err := net.DialTimeout("TCP", u.Host, tout)
+	_, err := http.Get(u.String() + "/")
+
 	if err != nil {
 		log.Printf("Server Unreachable, timeout after  %s seconds. Error : %s ", tout.String(), err)
 		return false
+	} else {
+		log.Printf("Server reachable %s", u.String())
 	}
-	conn.Close()
 	return true
 }
 
@@ -161,7 +162,8 @@ func main() {
 
 	for _, bserver := range config.Servers {
 		serverURL := url.URL{
-			Host: bserver.Host + ":" + bserver.Port,
+			Scheme: "http",
+			Host:   bserver.Host + ":" + bserver.Port,
 		}
 
 		proxy := httputil.NewSingleHostReverseProxy(&serverURL)
@@ -197,9 +199,8 @@ func main() {
 
 	go peroidicHealthCheck()
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", loadbalance)
-	if err := http.ListenAndServe(":8800", mux); err != nil {
+	http.HandleFunc("/", loadbalance)
+	if err := http.ListenAndServe("localhost:8800", nil); err != nil {
 		log.Fatal("Unable to start loadbalancer")
 	}
 }
