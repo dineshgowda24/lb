@@ -1,7 +1,7 @@
 # lb
 application loadbalancer written in go
 
-## Stating Application Servers
+## Starting Application Servers
 
 Go to `backendserver\config` and edit `config.json` to configure app servers.
 A sample configuration would look like:
