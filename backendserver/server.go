@@ -38,5 +38,6 @@ func main() {
 }
 
 func handle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "I came from "+r.URL.Hostname()+r.URL.Port())
+	s := r.Context().Value(http.ServerContextKey).(*http.Server)
+	fmt.Fprint(w, "I came from "+s.Addr)
 }
